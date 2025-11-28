@@ -7,10 +7,12 @@ use pyo3::prelude::*;
 mod _core {
     use pyo3::prelude::*;
     use pyo3::types::{PyDict,PyInt};
-    use numpy::ndarray::{Array,ArrayRef, Array1,ArrayD, ArrayView1, ArrayViewD, ArrayViewMutD,meshgrid, MeshIndex, Axis, Zip,Slice};
+    use numpy::ndarray::{Array,ArrayRef, Array1,ArrayD, ArrayView1, ArrayViewD, ArrayViewMutD,meshgrid, MeshIndex, Axis, Zip,Slice,IxDyn};
     use numpy::{IntoPyArray, PyArray1, PyArrayDyn, PyReadonlyArrayDyn, PyArrayMethods};
     use numpy::convert::{ToPyArray};
     use std::any::type_name;
+    use std::marker::Copy;
+
     fn type_of<T>(_: T) -> &'static str {
         type_name::<T>()
     }
@@ -39,7 +41,7 @@ mod _core {
     fn gradient(field: &ArrayViewD<'_, f64>, x: &ArrayView1<'_, f64>, axis:usize) -> ArrayD<f64> {
 
         let n:isize = x.len().try_into().unwrap(); // slice wants isize for some reason
-        let dx = ArrayRef::diff(&x,1,Axis(0));
+        let mut dx = ArrayRef::diff(&x,1,Axis(0)); //why mt though ?
 
         let mut grad = field.to_owned(); // gradient result
 
@@ -47,19 +49,24 @@ mod _core {
         let f_m = &field.slice_axis(Axis(axis),Slice::new(0,Some(n-2),1)); // f_{i-1}
         let f = &field.slice_axis(Axis(axis),Slice::new(1,Some(n-1),1)); // f_i
         
-        let mut _d = dx.slice_axis(Axis(0),Slice::new(1,Some(n-1),1)).into_dyn();
-        let mut _d_m = dx.slice_axis(Axis(0),Slice::new(0,Some(n-2),1)).into_dyn();
+        let mut dims = Array1::ones::<usize>(field.ndim()-axis);
+        dims[[0]] = n-2;
 
-        for i in 0..(field.ndim()-1-axis) {
-            _d = _d.insert_axis(Axis(0));
-            _d_m = _d_m.insert_axis(Axis(0));
-            println!("Added axis");
-        }
-        _d = _d.reversed_axes();
-        _d_m = _d_m.reversed_axes();
+        let _dims = dims.mapv(|x| x as usize);
+        let shape = IxDyn(_dims.as_slice().unwrap());
+
+        let mut _d = ArrayD::zeros(shape.clone() );
+        let mut _d_m = ArrayD::zeros(shape.clone() );
+
+        _d.slice_axis_mut(Axis(0),Slice::new(0,Some(n-2),1))
+        .assign(&dx.slice_axis(Axis(0),Slice::new(1,Some(n-1),1)).to_shape(shape.clone()).unwrap());
+        
+        _d_m.slice_axis_mut(Axis(0),Slice::new(0,Some(n-2),1))
+        .assign(&dx.slice_axis(Axis(0),Slice::new(0,Some(n-2),1)).to_shape(shape.clone()).unwrap());
 
         let d = &_d.broadcast(f.shape()).unwrap();
         let d_m = &_d_m.broadcast(f.shape()).unwrap();
+
 
 
         grad.slice_axis_mut(Axis(axis),Slice::new(1,Some(n-1),1)) // oder 2 inner region
