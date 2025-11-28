@@ -35,7 +35,7 @@ mod _core {
     fn gradient(field: &ArrayViewD<'_, f64>, x: &ArrayView1<'_, f64>, axis:usize) -> ArrayD<f64> {
 
         let n:isize = x.len().try_into().unwrap(); // slice wants isize for some reason
-        let mut grad = field.to_owned(); // gradient result
+        let mut grad = ArrayD::<f64>::zeros(field.raw_dim());
 
         let dx = ArrayRef::diff(&x,1,Axis(0)); //why mt though ?
 
