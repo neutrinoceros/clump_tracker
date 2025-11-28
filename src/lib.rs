@@ -6,16 +6,10 @@ use pyo3::prelude::*;
 #[pymodule]
 mod _core {
     use pyo3::prelude::*;
-    use pyo3::types::{PyDict,PyInt};
+    use pyo3::types::{PyDict,PyInt,PyList,PyFloat};
     use numpy::ndarray::{Array,ArrayRef, Array1,ArrayD, ArrayView1, ArrayViewD, ArrayViewMutD,meshgrid, MeshIndex, Axis, Zip,Slice,IxDyn};
     use numpy::{IntoPyArray, PyArray1, PyArrayDyn, PyReadonlyArrayDyn, PyArrayMethods};
-    use numpy::convert::{ToPyArray};
-    use std::any::type_name;
-    use std::marker::Copy;
 
-    fn type_of<T>(_: T) -> &'static str {
-        type_name::<T>()
-    }
 
     fn compute_total_energy_adi_shearing_box(rho: &ArrayViewD<'_, f64>,
                          vx1: &ArrayViewD<'_, f64>,
@@ -41,9 +35,10 @@ mod _core {
     fn gradient(field: &ArrayViewD<'_, f64>, x: &ArrayView1<'_, f64>, axis:usize) -> ArrayD<f64> {
 
         let n:isize = x.len().try_into().unwrap(); // slice wants isize for some reason
-        let mut dx = ArrayRef::diff(&x,1,Axis(0)); //why mt though ?
-
         let mut grad = field.to_owned(); // gradient result
+
+        let dx = ArrayRef::diff(&x,1,Axis(0)); //why mt though ?
+
 
         let f_p = &field.slice_axis(Axis(axis),Slice::new(2,Some(n),1)); // f_{i+1}
         let f_m = &field.slice_axis(Axis(axis),Slice::new(0,Some(n-2),1)); // f_{i-1}
@@ -113,7 +108,7 @@ mod _core {
     let (xx,_yy,_zz) = meshgrid((x,y,z),MeshIndex::IJ); //requieres unreleased nupy-rust to acces ndarray >=0.17
 
     
-    &gradient(vx1,x,0)+ &gradient(&(vx2 + q * omega * &xx).view(),y,1)+ &gradient(vx3 ,z,2)
+    &gradient(vx1,x,0)+ &gradient(&(vx2 + q * omega * &xx).view(),y,1)//+ &gradient(vx3 ,z,2)
 
     }
 
@@ -138,13 +133,51 @@ mod _core {
                 let e_tot = compute_total_energy_adi_shearing_box(rho,vx1,vx2,vx3,prs,phi,q,omega,gamma,x,y,z);
                 let div = compute_velocity_divergence_shearing_box(vx1,vx2,vx3,x,y,z,q,omega);
 
-                let mask = (&e_tot).map(|x| *x < e_thresh) & (&div).map(|x| *x < 0.0) & (rho).map(|x| *x > rho_thresh);
+                let mask = (&e_tot).map(|x| *x < e_thresh) & (&div).map(|x| *x < 0.0);// & (rho).map(|x| *x > rho_thresh);
                 
                 mask.iter()
                 .enumerate()
                 .filter_map(|(index, &value)| (value == true).then(|| index))
                 .collect() // ca renvoie peut-etre des indices 1D, à vérifier
         
+    }
+
+    #[pyfunction(name="find_adi_shearing_box")]
+    fn find_adi_shearing_box_py<'py>( py: Python<'py>,
+                        rho: &Bound<'py, PyArrayDyn<f64>>,
+                        vx1: &Bound<'py, PyArrayDyn<f64>>,
+                        vx2: &Bound<'py, PyArrayDyn<f64>>,
+                        vx3: &Bound<'py, PyArrayDyn<f64>>,
+                        prs: &Bound<'py, PyArrayDyn<f64>>,
+                        phi: &Bound<'py, PyArrayDyn<f64>>,
+                        q: Bound<'_, PyFloat>,
+                        omega:Bound<'_, PyFloat>,
+                        gamma:Bound<'_, PyFloat>,
+                        x: &Bound<'py, PyArray1<f64>>,
+                        y: &Bound<'py, PyArray1<f64>>,
+                        z: &Bound<'py, PyArray1<f64>>,
+                        e_thresh: Bound<'_, PyFloat>,
+                        rho_thresh: Bound<'_, PyFloat>
+                    ) ->Bound<'py, PyList> {
+
+        let a_rho = unsafe {rho.as_array()};
+        let a_vx1 = unsafe {vx1.as_array()};
+        let a_vx2 = unsafe {vx2.as_array()};
+        let a_vx3 = unsafe {vx3.as_array()};
+        let a_prs = unsafe {prs.as_array()};
+        let a_phi = unsafe {phi.as_array()};
+        let a_x = unsafe {x.as_array()};
+        let a_y = unsafe {y.as_array()};
+        let a_z = unsafe {z.as_array()};
+
+        let f_q:f64 = q.extract().unwrap();
+        let f_omega:f64 = omega.extract().unwrap();
+        let f_gamma:f64 = gamma.extract().unwrap();
+        let f_e_thresh:f64 = e_thresh.extract().unwrap();
+        let f_rho_thresh:f64 = rho_thresh.extract().unwrap();
+
+        PyList::new(py,find_adi_shearing_box(&a_rho,&a_vx1,&a_vx2,&a_vx3,&a_prs,&a_phi,f_q,f_omega,f_gamma,&a_x,&a_y,&a_z,f_e_thresh,f_rho_thresh))
+        .expect("LJFLs")
     }
 
 }
