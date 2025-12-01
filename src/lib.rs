@@ -230,7 +230,6 @@ mod _core {
     let mut nb_cc:usize = 0;
 
     let mut deja_vus = Array1::<u8>::zeros(indexes.len());
-    //let mut a_visiter = Array1::<u8>::zeros(indexes.len());
 
     let adj = compute_adjacency(indexes,x,y,z,d);
 
