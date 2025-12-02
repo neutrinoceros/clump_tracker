@@ -1,9 +1,10 @@
 import numpy as np
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 if TYPE_CHECKING:
-    from numpy import ndarray
+    from collections.abc import Callable
+    from numpy import ndarray, dtype
 
 
 def find_coordinates(
@@ -15,7 +16,11 @@ def find_coordinates(
     Omega: float = 1,
     gamma: float = -1.0,
     cs: float = -1.0,
-    conditions=None,
+    condition: Optional[
+        Callable[
+            [ndarray[tuple[int, int, int]]], ndarray[tuple[int, int, int], dtype[bool]]
+        ]
+    ] = None,
 ) -> ndarray[tuple[int, int, int]]:
     if gamma == -1 and "PRS" in data:
         raise ValueError("Please specify gamma.")
@@ -43,4 +48,9 @@ def find_coordinates(
     if len(z) > 1:
         div_v += np.gradient(data["VX3"], z, axis=2)
 
-    return np.array(np.nonzero(np.logical_and(E_tot < 0, div_v < 0))).T
+    mask = np.logical_and(E_tot < 0, div_v < 0)
+
+    if condition is not None:
+        mask = np.logical_and(mask, condition(mask))
+
+    return np.array(np.nonzero(mask)).T
