@@ -8,7 +8,11 @@ def test_tests():
     assert True
 
 
-@pytest.mark.parametrize("dtype", [float, np.float32, np.float64])
+def _dtype():
+    return "dtype", [float, np.float32, np.float64]
+
+
+@pytest.mark.parametrize(*_dtype())
 def test_gradient_1D_uniform(dtype):
     field = np.arange(10, dtype=dtype) + 5
     x = np.arange(10, dtype=dtype)
@@ -16,7 +20,8 @@ def test_gradient_1D_uniform(dtype):
     assert_array_equal(gradient(field, x, axis), np.gradient(field, x, axis=axis))
 
 
-def test_gradient_1D_non_uniform():
+@pytest.mark.parametrize(*_dtype())
+def test_gradient_1D_non_uniform(dtype):
     field = np.arange(10, dtype=float) + 5
     axis = 0
     x = np.geomspace(1, 10, len(field), dtype=float)
