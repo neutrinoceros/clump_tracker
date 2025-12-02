@@ -21,13 +21,13 @@ if TYPE_CHECKING:
 
 
 def compute_cc(
-    indexes: list,
+    indexes: list[tuple[int, int, int], dtype[int]],
     x: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     y: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     z: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     d: Union[float, np.float32, np.float64],
     geometry: str,
-) -> list:
+) -> list[list[tuple[int, int, int], dtype[int]]]:
     if x.dtype == np.float32:
         return compute_cc_f32(indexes, x, y, z, d, geometry)
     elif x.dtype in [float, np.float64]:
@@ -37,12 +37,12 @@ def compute_cc(
 
 
 def compute_adjacency_cartesian(
-    indexes: list,
+    indexes: list[tuple[int, int, int], dtype[int]],
     x: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     y: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     z: ndarray[tuple[int, int, int], dtype[Union[float, np.float32, np.float64]]],
     d: Union[float, np.float32, np.float64],
-) -> list:
+) -> list[list[tuple[int, int, int], dtype[int]]]:
     if x.dtype == np.float32:
         return compute_adjacency_cartesian_f32(indexes, x, y, z, d)
     elif x.dtype in [float, np.float64]:
