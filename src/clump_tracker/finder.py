@@ -1,4 +1,6 @@
 import numpy as np
+from clump_tracker.clumps import Clump
+from clump_tracker._core import compute_cc
 
 from typing import TYPE_CHECKING, Optional
 
@@ -54,3 +56,63 @@ def find_coordinates(
         mask = np.logical_and(mask, condition(mask))
 
     return np.array(np.nonzero(mask)).T
+
+
+def find_clumps(
+    data: dict[str, ndarray[tuple[int, int, int]]],
+    x: ndarray[tuple[int, int, int]],
+    y: ndarray[tuple[int, int, int]],
+    z: ndarray[tuple[int, int, int]],
+    max_distance: float,
+    q: float = 3 / 2,
+    Omega: float = 1,
+    gamma: float = -1.0,
+    cs: float = -1.0,
+    condition: Optional[
+        Callable[
+            [ndarray[tuple[int, int, int]]], ndarray[tuple[int, int, int], dtype[bool]]
+        ]
+    ] = None,
+) -> list[Clump]:
+    coordinates = find_coordinates(data, x, y, z, q, Omega, gamma, condition)
+
+    cc = compute_cc(coordinates, x, y, z, max_distance, "cartesian")
+
+    xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
+
+    clumps = []
+
+    for c in cc:
+        x = 0
+        y = 0
+        z = 0
+        vx = 0
+        vy = 0
+        vz = 0
+        mass = 0
+        ncells = 0
+        max_density = 0
+        for idx in c:
+            x += xx[*idx] * data["RHO"][*idx]
+            y += yy[*idx] * data["RHO"][*idx]
+            z += zz[*idx] * data["RHO"][*idx]
+
+            vx += data["VX1"][*idx] * data["RHO"][*idx]
+            if "VX2" in data:
+                vy += data["VX2"][*idx] * data["RHO"][*idx]
+            if "VX3" in data:
+                vz += data["VX3"][*idx] * data["RHO"][*idx]
+
+            mass += data["RHO"][*idx]
+
+            max_density = max(max_density, data["RHO"][*idx])
+            ncells += 1
+        x /= mass
+        y /= mass
+        z /= mass
+        vx /= mass
+        vy /= mass
+        vz /= mass
+
+        clumps.append(Clump(x, y, z, vx, vy, vz, mass, max_density))
+    return clumps
