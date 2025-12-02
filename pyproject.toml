@@ -4,11 +4,10 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 authors = [
-    { name = "marc", email = "vandenbossche.marc@hotmail.com" }
+    { name = "vbma" }
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "dataclasses>=0.8",
     "numpy>=2.3.5",
     "pytest>=9.0.1",
 ]

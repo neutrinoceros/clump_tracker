@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import numpy as np
 from clump_tracker.clumps import Clump
 from clump_tracker._core import compute_cc
+
+__all__ = ["find_clumps"]
 
 from typing import TYPE_CHECKING, Optional
 
@@ -64,6 +68,7 @@ def find_clumps(
     y: ndarray[tuple[int, int, int]],
     z: ndarray[tuple[int, int, int]],
     max_distance: float,
+    *,
     q: float = 3 / 2,
     Omega: float = 1,
     gamma: float = -1.0,
@@ -74,9 +79,9 @@ def find_clumps(
         ]
     ] = None,
 ) -> list[Clump]:
-    coordinates = find_coordinates(data, x, y, z, q, Omega, gamma, condition)
+    coordinates = find_coordinates(data, x, y, z, q, Omega, gamma, cs, condition)
 
-    cc = compute_cc(coordinates, x, y, z, max_distance, "cartesian")
+    cc = compute_cc(list(coordinates), x, y, z, max_distance, "cartesian")
 
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
 
