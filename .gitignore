@@ -1,0 +1,8 @@
+# dev only artifacts
+.venv
+*.so
+target
+
+# cache files
+__pycache__
+.*_cache
