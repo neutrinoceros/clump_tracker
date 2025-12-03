@@ -2,7 +2,6 @@ from clump_tracker import compute_adjacency_cartesian, compute_cc
 import pytest
 import numpy as np
 from numpy.testing import assert_array_equal
-from itertools import product
 
 
 def _compute_adjacency_cartesian_ref(indexes, x, y, z, max_distance):
@@ -62,21 +61,22 @@ def _compute_cc_ref(indexes, x, y, z, max_distance):
     return composante_connexes
 
 
-def _params():
-    return (
-        "indexes,dtype",
-        product(
-            [
-                [[0, 0, 0], [0, 1, 0], [1, 0, 1]],
-                [[0, 0, 0], [49, 19, 4]],
-                [[i, 0, 0] for i in range(50)] + [[i, 0, 4] for i in range(50)],
-            ],
-            [np.float32, np.float64, float],
-        ),
-    )
+@pytest.fixture(
+    params=[
+        [[0, 0, 0], [0, 1, 0], [1, 0, 1]],
+        [[0, 0, 0], [49, 19, 4]],
+        [[i, 0, 0] for i in range(50)] + [[i, 0, 4] for i in range(50)],
+    ]
+)
+def indexes(request):
+    return request.param
 
 
-@pytest.mark.parametrize(*_params())
+@pytest.fixture(params=[np.float32, np.float64, float])
+def dtype(request):
+    return request.param
+
+
 def test_adjacency(indexes, dtype):
     x = np.linspace(0, 10, 50, dtype=dtype)
     y = np.linspace(0, 5, 20, dtype=dtype)
@@ -88,7 +88,6 @@ def test_adjacency(indexes, dtype):
     )
 
 
-@pytest.mark.parametrize(*_params())
 def test_cc(indexes, dtype):
     x = np.linspace(0, 10, 50, dtype=dtype)
     y = np.linspace(0, 5, 20, dtype=dtype)
@@ -101,7 +100,6 @@ def test_cc(indexes, dtype):
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize(*_params())
 def test_cc_not_implemented(indexes, dtype):
     x = np.linspace(0, 10, 50, dtype=dtype)
     y = np.linspace(0, 5, 20, dtype=dtype)
