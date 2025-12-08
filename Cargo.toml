@@ -11,4 +11,4 @@ crate-type = ["cdylib"]
 [dependencies]
 num-traits = "0.2.19"
 numpy = { git = "https://github.com/PyO3/rust-numpy.git", version = "0.27.0", branch = "main" }
-pyo3 = { version = "0.27.1", features = ["extension-module", "abi3-py310"] }
+pyo3 = { version = "0.27.1", features = ["extension-module", "abi3-py311"] }
