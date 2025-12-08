@@ -89,7 +89,7 @@ def find_clumps(
 
     xx, yy, zz = np.meshgrid(x, y, z, indexing="ij")
     ddx, ddy, ddz = np.meshgrid(dx, dy, dz, indexing="ij")
-    print(dz)
+
     if len(y) == 1:
         _dy = np.array([1.0])
     else:
@@ -101,7 +101,6 @@ def find_clumps(
     ddx, ddy, ddz = np.meshgrid(dx, _dy, _dz, indexing="ij")
 
     dv = ddx * ddy * ddz
-    print(f"{dv.shape = }")
 
     clumps = []
     for c in cc:
