@@ -2,7 +2,11 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from clump_tracker import compute_adjacency_matrix_cartesian, compute_cc
+from clump_tracker import (
+    compute_adjacency_list_cartesian,
+    compute_adjacency_matrix_cartesian,
+    compute_cc,
+)
 
 
 def _compute_adjacency_matrix_cartesian_ref(indexes, x, y, z, max_distance):
@@ -228,6 +232,16 @@ def test_cc_list_ref(cc_params):
 
     actual = _compute_cc_from_list_ref(indexes, x, y, z, d)
     assert actual == expected
+
+
+def test_adjacency_list(indexes, dtype):
+    x = np.linspace(0, 10, 50, dtype=dtype)
+    y = np.linspace(0, 5, 20, dtype=dtype)
+    z = np.linspace(0, 1, 5, dtype=dtype)
+
+    assert compute_adjacency_list_cartesian(
+        indexes, x, y, z, 1.0
+    ) == _compute_adjacency_list_cartesian_ref(indexes, x, y, z, 1.0)
 
 
 def test_cc_cartesian(cc_params, dtype):
