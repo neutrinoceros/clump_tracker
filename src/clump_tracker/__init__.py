@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 __all__ = [
-    "compute_adjacency_matrix_cartesian",
     "compute_adjacency_list_cartesian",
     "compute_cc",
     "gradient",
@@ -14,8 +13,6 @@ import numpy as np
 from clump_tracker._core import (
     compute_adjacency_list_cartesian_f32,
     compute_adjacency_list_cartesian_f64,
-    compute_adjacency_matrix_cartesian_f32,
-    compute_adjacency_matrix_cartesian_f64,
     compute_cc_f32,
     compute_cc_f64,
     gradient_f32,
@@ -38,21 +35,6 @@ def compute_cc(
         return compute_cc_f32(indexes, x, y, z, d, geometry)
     elif x.dtype in [float, np.float64]:
         return compute_cc_f64(indexes, x, y, z, d, geometry)
-    else:
-        raise TypeError("Only supports f32 and f64.")
-
-
-def compute_adjacency_matrix_cartesian(
-    indexes: list[tuple[int, int, int], dtype[int]],
-    x: ndarray[tuple[int], dtype[float | np.float32 | np.float64]],
-    y: ndarray[tuple[int], dtype[float | np.float32 | np.float64]],
-    z: ndarray[tuple[int], dtype[float | np.float32 | np.float64]],
-    d: float | np.float32 | np.float64,
-) -> list[list[tuple[int, int, int], dtype[int]]]:
-    if x.dtype == np.float32:
-        return compute_adjacency_matrix_cartesian_f32(indexes, x, y, z, d)
-    elif x.dtype in [float, np.float64]:
-        return compute_adjacency_matrix_cartesian_f64(indexes, x, y, z, d)
     else:
         raise TypeError("Only supports f32 and f64.")
 
