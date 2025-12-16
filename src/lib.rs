@@ -331,7 +331,7 @@ mod _core {
         PyList::new(py,compute_adjacency_list_cartesian::<f64>(&r_indexes,&r_x,&r_y,&r_z,r_d)).expect("lsjglsfkmd")
     }
 
-    fn compute_cc<T:AtLeastF32>(indexes:&Vec<Vec<usize>>,
+    fn compute_cc_from_matrix<T:AtLeastF32>(indexes:&Vec<Vec<usize>>,
         x:&ArrayView1<'_, T>,
         y:&ArrayView1<'_, T>,
         z:&ArrayView1<'_, T>,
@@ -383,6 +383,84 @@ mod _core {
                     for k in 0..indexes.len() {
                         a_visiter[k] += adj[[j,k]];
                         a_visiter[k] = min(a_visiter[k],1);
+                    }
+                    a_visiter[j] = 0;
+                    deja_vus[j] = 1;
+
+                    for k in 0..indexes.len() {
+                        if a_visiter[k] == 1 && deja_vus[k] == 0 {
+                            a_visiter[k] = 1;
+                        } else {
+                            a_visiter[k] = 0;
+                        }
+                    }
+
+                }
+            }
+        }
+
+        let nb_deja_vus:usize = deja_vus.sum().try_into().unwrap(); // sum result may overflow !
+        if  nb_deja_vus== indexes.len(){
+            break;
+        }
+
+
+    }
+
+    composante_connexes
+    }
+
+    fn compute_cc_from_list<T:AtLeastF32>(indexes:&Vec<Vec<usize>>,
+        x:&ArrayView1<'_, T>,
+        y:&ArrayView1<'_, T>,
+        z:&ArrayView1<'_, T>,
+        d: T,
+        geometry:String ) -> Vec<Vec<usize>> {
+
+
+    let mut composante_connexes:Vec<Vec<usize>> = Vec::new();
+    let mut nb_cc:usize = 0;
+
+    let mut deja_vus = Array1::<usize>::zeros(indexes.len());
+
+    let adj:Vec<Vec<usize>>;
+    if geometry == "cartesian" {
+            adj = compute_adjacency_list_cartesian::<T>(indexes,x,y,z,d);
+    } else {
+        unimplemented!()
+    }
+
+
+    for (i,_) in indexes.iter().enumerate(){
+        let mut a_visiter = Array1::<u8>::zeros(indexes.len());
+        if deja_vus[i] == 0 {
+            composante_connexes.push([i].to_vec());
+            nb_cc +=1;
+        }
+
+        for k in 0..adj[i].len() {
+            a_visiter[adj[i][k]] = 1;
+        }
+
+
+        a_visiter[[i]] = 0;
+        deja_vus[[i]] = 1;
+
+        for k in 0..indexes.len() {
+            if a_visiter[k] == 1 && deja_vus[k] == 0 {
+                a_visiter[k] = 1;
+            } else {
+                a_visiter[k] = 0; // useless
+            }
+        }
+
+        while a_visiter.sum()>0 {
+            for (j,_) in indexes.iter().enumerate() {
+                if a_visiter[j] == 1 && deja_vus[j] == 0 {
+                    composante_connexes[nb_cc-1].push(j);
+
+                    for k in 0..adj[i].len() {
+                        a_visiter[adj[i][k]] = 1;
                     }
                     a_visiter[j] = 0;
                     deja_vus[j] = 1;
@@ -527,7 +605,7 @@ mod _core {
         let r_indexes:Vec<Vec<usize>> = indexes.extract().unwrap();
         let r_geometry:String = geometry.extract().unwrap();
 
-        PyList::new(py,compute_cc_low_mem::<f32>(&r_indexes,&r_x,&r_y,&r_z,r_d,r_geometry)).expect("???")
+        PyList::new(py,compute_cc_from_list::<f32>(&r_indexes,&r_x,&r_y,&r_z,r_d,r_geometry)).expect("???")
     }
 
     #[pyfunction(name="compute_cc_f64")]
@@ -546,7 +624,9 @@ mod _core {
         let r_indexes:Vec<Vec<usize>> = indexes.extract().unwrap();
         let r_geometry:String = geometry.extract().unwrap();
 
-        PyList::new(py,compute_cc_low_mem::<f64>(&r_indexes,&r_x,&r_y,&r_z,r_d,r_geometry)).expect("???")
+        PyList::new(py,compute_cc_from_list::<f64>(&r_indexes,&r_x,&r_y,&r_z,r_d,r_geometry)).expect("???")
     }
+
+
 
 }
